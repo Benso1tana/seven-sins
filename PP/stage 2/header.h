@@ -31,8 +31,8 @@ typedef struct {
 
 typedef struct {
     SDL_Rect pos;
-    SDL_Surface *spriteDroite[10];
-    SDL_Surface *spriteGauche[10];
+    SDL_Surface *spriteDroite[6];
+    SDL_Surface *spriteGauche[6];
     int frameIndex;
     int direction;
     int vie;
