@@ -1,0 +1,38 @@
+# depslib dependency file v1.0
+1747489789 source:/home/chehira/Bureau/jeulina/main.cpp
+	<SDL/SDL.h>
+	<SDL/SDL_image.h>
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_ttf.h>
+	<stdio.h>
+	<stdbool.h>
+
+1747489789 source:/home/chehira/Bureau/jeulina/main.c
+	<SDL/SDL.h>
+	<SDL/SDL_image.h>
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_ttf.h>
+	<stdio.h>
+	<stdbool.h>
+
+1747686186 source:/home/chehira/jeulina/main.c
+	<SDL/SDL.h>
+	<SDL/SDL_image.h>
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_ttf.h>
+	<stdio.h>
+	<stdbool.h>
+	"menu_principale.c"
+
+1747675881 /home/chehira/jeulina/menu_principale.h
+	<SDL/SDL.h>
+	<SDL/SDL_image.h>
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_ttf.h>
+
+1747686388 /home/chehira/jeulina/menu_principale.c
+	"menu_principale.h"
+	<SDL/SDL_image.h>
+	<SDL/SDL_mixer.h>
+	<SDL/SDL_ttf.h>
+
