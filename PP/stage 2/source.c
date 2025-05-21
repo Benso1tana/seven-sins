@@ -22,10 +22,10 @@ void afficherBackground(Background bg, SDL_Surface *ecran) {
 }
 
 void scrollingArrows(Background *bg, const Uint8 *keys) {
-    if (keys[SDLK_LEFT])  bg->camera.x -= 10;
-    if (keys[SDLK_RIGHT]) bg->camera.x += 10;
-    if (keys[SDLK_UP])    bg->camera.y -= 10;
-    if (keys[SDLK_DOWN])  bg->camera.y += 10;
+    if (keys[SDLK_LEFT])  bg->camera.x -= 5;
+    if (keys[SDLK_RIGHT]) bg->camera.x += 5;
+    if (keys[SDLK_UP])    bg->camera.y -= 5;
+    if (keys[SDLK_DOWN])  bg->camera.y += 5;
 
     if (bg->camera.x < 0) bg->camera.x = 0;
     if (bg->camera.y < 0) bg->camera.y = 0;
@@ -60,36 +60,43 @@ void afficherFlamme(Flamme f, SDL_Surface *ecran, Background bg) {
 
 void initialiserKaelios(Kaelios *k, SDL_Surface *img) {
     k->pos.x = 500;
-    k->pos.y = 600;
+    k->pos.y = 750;
     k->pos.w = 100;
     k->pos.h = 150;
     k->direction = 1;
     k->frameIndex = 0;
     k->vie = 100;
+    k->nbCristaux = 0;
+    k->gameOver = 0;
 
-    for (int i = 0; i < 10; i++) {
-        char pathG[100], pathD[100];
+    for (int i = 0; i < 6; i++) {
+        char pathD[100], pathG[100];
         sprintf(pathD, "droite stage 2/marcher%d.png", i + 1);
         sprintf(pathG, "gauche stage 2/marcher%d.png", i + 1);
+
         k->spriteDroite[i] = IMG_Load(pathD);
         k->spriteGauche[i] = IMG_Load(pathG);
     }
 }
 
 void deplacerKaelios(Kaelios *k, const Uint8 *keys, Background bg) {
+    if (k->vie <= 0) return;
+
     if (keys[SDLK_RIGHT]) {
         k->pos.x += 5;
         k->direction = 1;
-        k->frameIndex = (k->frameIndex + 1) % 10;
+        k->frameIndex = (k->frameIndex + 1) % 6;
     } else if (keys[SDLK_LEFT]) {
         k->pos.x -= 5;
         k->direction = -1;
-        k->frameIndex = (k->frameIndex + 1) % 10;
+        k->frameIndex = (k->frameIndex + 1) % 6;
     }
 }
 
 void afficherKaelios(Kaelios *k, SDL_Surface *ecran, Background bg) {
+    if (k->vie <= 0) return;
     SDL_Surface *currentSprite = (k->direction == 1) ? k->spriteDroite[k->frameIndex] : k->spriteGauche[k->frameIndex];
+
     SDL_Rect dst = { k->pos.x - bg.camera.x, k->pos.y - bg.camera.y, currentSprite->w, currentSprite->h };
     SDL_BlitSurface(currentSprite, NULL, ecran, &dst);
 }
@@ -106,8 +113,41 @@ void verifierCollisionFlammes(Kaelios *k, Flamme *flammes, int nb) {
             k->pos.y + k->pos.h > fRect.y) {
 
             k->vie -= 1;
-            if (k->vie < 0) k->vie = 0;
+            if (k->vie <= 0) {
+                k->vie = 0;
+                k->gameOver = 1;
+            }
         }
+    }
+}
+
+void verifierCollisionCristaux(Kaelios *k, Cristal *cristaux, int nb) {
+    for (int i = 0; i < nb; i++) {
+        if (cristaux[i].collecte) continue;
+
+        SDL_Rect c = cristaux[i].pos;
+        if (k->pos.x < c.x + c.w &&
+            k->pos.x + k->pos.w > c.x &&
+            k->pos.y < c.y + c.h &&
+            k->pos.y + k->pos.h > c.y) {
+
+            cristaux[i].collecte = 1;
+            k->nbCristaux++;
+        }
+    }
+}
+
+void afficherCristaux(Cristal *cristaux, int nb, SDL_Surface *ecran, SDL_Surface *img, Background bg) {
+    for (int i = 0; i < nb; i++) {
+        if (cristaux[i].collecte) continue;
+
+        SDL_Rect dst = {
+            cristaux[i].pos.x - bg.camera.x,
+            cristaux[i].pos.y - bg.camera.y,
+            img->w,
+            img->h
+        };
+        SDL_BlitSurface(img, NULL, ecran, &dst);
     }
 }
 
@@ -136,4 +176,14 @@ void afficherTemps(SDL_Surface *ecran, Uint32 debut, TTF_Font *police) {
     SDL_Rect pos = {10, 10};
     SDL_BlitSurface(texte, NULL, ecran, &pos);
     SDL_FreeSurface(texte);
+}
+
+void afficherScoreCristaux(SDL_Surface *ecran, int score, TTF_Font *police) {
+    SDL_Color jaune = {255, 255, 0};
+    char texte[50];
+    sprintf(texte, "Cristaux : %d", score);
+    SDL_Surface *msg = TTF_RenderText_Solid(police, texte, jaune);
+    SDL_Rect pos = {10, 40};
+    SDL_BlitSurface(msg, NULL, ecran, &pos);
+    SDL_FreeSurface(msg);
 }
