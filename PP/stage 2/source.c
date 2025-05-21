@@ -60,50 +60,32 @@ void afficherFlamme(Flamme f, SDL_Surface *ecran, Background bg) {
 
 void initialiserKaelios(Kaelios *k, SDL_Surface *img) {
     k->pos.x = 500;
-    k->pos.y = 600;
+    k->pos.y = 750;
     k->pos.w = 100;
     k->pos.h = 150;
     k->direction = 1;
     k->frameIndex = 0;
     k->vie = 100;
+    k->nbCristaux = 0;
+    k->gameOver = 0;
+    k->isJumping = 0;
+    k->jumpVelocity = 0;
+    k->gravity = 1;
 
-    // Initialize all sprite pointers to NULL
     for (int i = 0; i < 6; i++) {
-        k->spriteDroite[i] = NULL;
-        k->spriteGauche[i] = NULL;
-    }
-
-    // Load sprites with error checking
-    for (int i = 0; i < 6; i++) {
-        char pathG[100], pathD[100];
+        char pathD[100], pathG[100];
         sprintf(pathD, "droite stage 2/marcher%d.png", i + 1);
         sprintf(pathG, "gauche stage 2/marcher%d.png", i + 1);
-        
+
         k->spriteDroite[i] = IMG_Load(pathD);
-        if (!k->spriteDroite[i]) {
-            printf("Erreur de chargement du sprite droit %d: %s\n", i + 1, IMG_GetError());
-            // Clean up previously loaded sprites
-            for (int j = 0; j < i; j++) {
-                if (k->spriteDroite[j]) SDL_FreeSurface(k->spriteDroite[j]);
-                if (k->spriteGauche[j]) SDL_FreeSurface(k->spriteGauche[j]);
-            }
-            return;
-        }
-        
         k->spriteGauche[i] = IMG_Load(pathG);
-        if (!k->spriteGauche[i]) {
-            printf("Erreur de chargement du sprite gauche %d: %s\n", i + 1, IMG_GetError());
-            // Clean up previously loaded sprites
-            for (int j = 0; j <= i; j++) {
-                if (k->spriteDroite[j]) SDL_FreeSurface(k->spriteDroite[j]);
-                if (k->spriteGauche[j]) SDL_FreeSurface(k->spriteGauche[j]);
-            }
-            return;
-        }
     }
 }
 
 void deplacerKaelios(Kaelios *k, const Uint8 *keys, Background bg) {
+    if (k->vie <= 0) return;
+
+    // Handle horizontal movement
     if (keys[SDLK_RIGHT]) {
         k->pos.x += 5;
         k->direction = 1;
@@ -113,17 +95,31 @@ void deplacerKaelios(Kaelios *k, const Uint8 *keys, Background bg) {
         k->direction = -1;
         k->frameIndex = (k->frameIndex + 1) % 6;
     }
+
+    // Handle jumping
+    if (keys[SDLK_SPACE] && !k->isJumping) {
+        k->isJumping = 1;
+        k->jumpVelocity = -15; // Initial upward velocity
+    }
+
+    // Apply gravity and update vertical position
+    if (k->isJumping) {
+        k->jumpVelocity += k->gravity;
+        k->pos.y += k->jumpVelocity;
+
+        // Check if character has landed
+        if (k->pos.y >= 610) { // Ground level
+            k->pos.y = 610;
+            k->isJumping = 0;
+            k->jumpVelocity = 0;
+        }
+    }
 }
 
 void afficherKaelios(Kaelios *k, SDL_Surface *ecran, Background bg) {
+    if (k->vie <= 0) return;
     SDL_Surface *currentSprite = (k->direction == 1) ? k->spriteDroite[k->frameIndex] : k->spriteGauche[k->frameIndex];
-    
-    // Check if the sprite exists before trying to use it
-    if (!currentSprite) {
-        printf("Erreur: Sprite manquant pour l'animation\n");
-        return;
-    }
-    
+
     SDL_Rect dst = { k->pos.x - bg.camera.x, k->pos.y - bg.camera.y, currentSprite->w, currentSprite->h };
     SDL_BlitSurface(currentSprite, NULL, ecran, &dst);
 }
@@ -140,8 +136,41 @@ void verifierCollisionFlammes(Kaelios *k, Flamme *flammes, int nb) {
             k->pos.y + k->pos.h > fRect.y) {
 
             k->vie -= 1;
-            if (k->vie < 0) k->vie = 0;
+            if (k->vie <= 0) {
+                k->vie = 0;
+                k->gameOver = 1;
+            }
         }
+    }
+}
+
+void verifierCollisionCristaux(Kaelios *k, Cristal *cristaux, int nb) {
+    for (int i = 0; i < nb; i++) {
+        if (cristaux[i].collecte) continue;
+
+        SDL_Rect c = cristaux[i].pos;
+        if (k->pos.x < c.x + c.w &&
+            k->pos.x + k->pos.w > c.x &&
+            k->pos.y < c.y + c.h &&
+            k->pos.y + k->pos.h > c.y) {
+
+            cristaux[i].collecte = 1;
+            k->nbCristaux++;
+        }
+    }
+}
+
+void afficherCristaux(Cristal *cristaux, int nb, SDL_Surface *ecran, SDL_Surface *img, Background bg) {
+    for (int i = 0; i < nb; i++) {
+        if (cristaux[i].collecte) continue;
+
+        SDL_Rect dst = {
+            cristaux[i].pos.x - bg.camera.x,
+            cristaux[i].pos.y - bg.camera.y,
+            img->w,
+            img->h
+        };
+        SDL_BlitSurface(img, NULL, ecran, &dst);
     }
 }
 
@@ -170,4 +199,14 @@ void afficherTemps(SDL_Surface *ecran, Uint32 debut, TTF_Font *police) {
     SDL_Rect pos = {10, 10};
     SDL_BlitSurface(texte, NULL, ecran, &pos);
     SDL_FreeSurface(texte);
+}
+
+void afficherScoreCristaux(SDL_Surface *ecran, int score, TTF_Font *police) {
+    SDL_Color jaune = {255, 255, 0};
+    char texte[50];
+    sprintf(texte, "Cristaux : %d", score);
+    SDL_Surface *msg = TTF_RenderText_Solid(police, texte, jaune);
+    SDL_Rect pos = {10, 40};
+    SDL_BlitSurface(msg, NULL, ecran, &pos);
+    SDL_FreeSurface(msg);
 }

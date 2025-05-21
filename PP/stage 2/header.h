@@ -40,6 +40,9 @@ typedef struct {
     int vie;
     int nbCristaux;
     int gameOver;
+    int isJumping;
+    int jumpVelocity;
+    int gravity;
 } Kaelios;
 
 // Flammes
