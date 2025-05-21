@@ -27,6 +27,8 @@ typedef struct {
 
 typedef struct {
     SDL_Rect pos;
+    int collecte;  // non utilisé ici mais tu peux garder si besoin
+    int visible;   // permet de savoir si le cristal est ramassé ou non
 } Cristal;
 
 typedef struct {
@@ -36,6 +38,8 @@ typedef struct {
     int frameIndex;
     int direction;
     int vie;
+    int nbCristaux;
+    int gameOver;
 } Kaelios;
 
 // Flammes
@@ -49,6 +53,11 @@ void deplacerKaelios(Kaelios *k, const Uint8 *keys, Background bg);
 void afficherKaelios(Kaelios *k, SDL_Surface *ecran, Background bg);
 void verifierCollisionFlammes(Kaelios *k, Flamme *flammes, int nb);
 void afficherBarreVie(Kaelios *k, SDL_Surface *ecran);
+
+// Cristaux
+void verifierCollisionCristaux(Kaelios *k, Cristal *cristaux, int nb);
+void afficherCristaux(Cristal *cristaux, int nb, SDL_Surface *ecran, SDL_Surface *img, Background bg);
+void afficherScoreCristaux(SDL_Surface *ecran, int score, TTF_Font *police);
 
 // Background
 void initialiserBackground(Background *bg, const char *path, int xPosEcran);
